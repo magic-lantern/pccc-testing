@@ -4,11 +4,12 @@ library(readr)
 library(dplyr)   
 library(magrittr)
 library(tictoc)  # timing tools
+library(qwraps2)
 
 # Data import
 tic()
 dat <-
-  readr::read_csv("codes.dat",
+  readr::read_csv("codes.dat", trim_ws = TRUE,
                   col_types = paste(rep("c", 83), collapse = "")) %>%
   dplyr::filter(is.na(Comp_flag)) %>%
   dplyr::mutate(id = seq_along(Comp_flag))
@@ -35,6 +36,12 @@ icd10_results <-
 toc()
 
 # Simple Summary Statistics
+qwraps2::frmt(nrow(dat))
+
+bind_rows(icd09_results %>% summarize_at(vars(-id), sum) %>% mutate(icdv = 9),
+          icd10_results %>% summarize_at(vars(-id), sum) %>% mutate(icdv = 10)) %>%
+print.data.frame
+
 bind_rows(icd09_results %>% summarize_at(vars(-id), mean) %>% mutate(icdv = 9),
           icd10_results %>% summarize_at(vars(-id), mean) %>% mutate(icdv = 10)) %>%
 print.data.frame

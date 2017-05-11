@@ -1,0 +1,153 @@
+
+R version 3.3.3 (2017-03-06) -- "Another Canoe"
+Copyright (C) 2017 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> # Packages
+> library(pccc)
+> library(readr)
+> library(dplyr)   
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(magrittr)
+> library(tictoc)  # timing tools
+> library(qwraps2)
+> 
+> # Data import
+> tic()
+> dat <-
++   readr::read_csv("codes.dat", trim_ws = TRUE,
++                   col_types = paste(rep("c", 83), collapse = "")) %>%
++   dplyr::filter(is.na(Comp_flag)) %>%
++   dplyr::mutate(id = seq_along(Comp_flag))
+> toc()
+17.617 sec elapsed
+> 
+> # Run ccc on the ICD-9 codes
+> tic()
+> icd09_results <-
++   ccc(dat,
++       id = id,
++       dx_cols = dplyr::vars(dplyr::starts_with("ICD9")),
++       pc_cols = dplyr::vars(dplyr::starts_with("ICD9")),
++       icdv = 9)
+> toc()
+315.017 sec elapsed
+> 
+> # Run ccc on the ICD-10 codes
+> tic()
+> icd10_results <-
++   ccc(dat,
++       id = id,
++       dx_cols = dplyr::vars(dplyr::starts_with("ICD10")),
++       pc_cols = dplyr::vars(dplyr::starts_with("ICD10")),
++       icdv = 10)
+> toc()
+970.885 sec elapsed
+> 
+> # Simple Summary Statistics
+> qwraps2::frmt(nrow(dat))
+[1] "2,296,922"
+> 
+> bind_rows(icd09_results %>% summarize_at(vars(-id), sum) %>% mutate(icdv = 9),
++           icd10_results %>% summarize_at(vars(-id), sum) %>% mutate(icdv = 10)) %>%
++ print.data.frame
+  Neuromuscular    CVD Respiratory Renal    GI Hemato_immu Metabolic
+1         58326 415888       29690 46349 72245        8472      6140
+2         62362 188995         709   882  5227       39547     13143
+  Congeni_genetric Malignancy Neonatal Tech_dep Transplant ccc_flag icdv
+1             5258         29     2814    49722       4883   589545    9
+2             6933       1485     2936     3248          0   312510   10
+> 
+> bind_rows(icd09_results %>% summarize_at(vars(-id), mean) %>% mutate(icdv = 9),
++           icd10_results %>% summarize_at(vars(-id), mean) %>% mutate(icdv = 10)) %>%
++ print.data.frame
+  Neuromuscular        CVD Respiratory        Renal          GI Hemato_immu
+1    0.02539311 0.18106318 0.012925994 0.0201787436 0.031452962 0.003688414
+2    0.02715025 0.08228185 0.000308674 0.0003839921 0.002275654 0.017217389
+    Metabolic Congeni_genetric   Malignancy    Neonatal    Tech_dep  Transplant
+1 0.002673143      0.002289150 1.262559e-05 0.001225118 0.021647231 0.002125888
+2 0.005722005      0.003018387 6.465174e-04 0.001278232 0.001414066 0.000000000
+   ccc_flag icdv
+1 0.2566674    9
+2 0.1360560   10
+> 
+> # Looking for the differences between the results of ICD 9 and ICD 10 runs
+> diffs <- Vectorize(function(x, y) {
++   if(x == 0 & y == 0) {
++     return("Both Negative")
++   } else if (x == 0 & y == 1) {
++     return("x negative, y positive")
++   } else if (x == 1 & y == 0) {
++     return("x positive, y negative")
++   } else {
++     return("Both positive")
++   }
++ })
+> 
+> tic()
+>   diffs(as.matrix(icd09_results[, -1]), 
++         as.matrix(icd10_results[, -1])) %>%
++   table %>%
++   print %>%
++   prop.table
+.
+         Both Negative          Both positive x negative, y positive 
+              28402981                 470333                 167644 
+x positive, y negative 
+                819028 
+.
+         Both Negative          Both positive x negative, y positive 
+           0.951205436            0.015751280            0.005614336 
+x positive, y negative 
+           0.027428948 
+> toc()
+124.612 sec elapsed
+> 
+> 
+> print(sessionInfo(), locale = FALSE)
+R version 3.3.3 (2017-03-06)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Debian GNU/Linux 8 (jessie)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] qwraps2_0.2.4.9000 tictoc_1.0         magrittr_1.5       dplyr_0.5.0       
+[5] readr_1.1.0        pccc_0.2.0.9000   
+
+loaded via a namespace (and not attached):
+ [1] Rcpp_0.12.10     assertthat_0.2.0 plyr_1.8.4       grid_3.3.3      
+ [5] R6_2.2.0         gtable_0.2.0     DBI_0.6-1        scales_0.4.1    
+ [9] ggplot2_2.2.1    lazyeval_0.2.0   tools_3.3.3      munsell_0.4.3   
+[13] hms_0.3          colorspace_1.3-2 tibble_1.3.0    
+> 
+> proc.time()
+    user   system  elapsed 
+1458.812    2.744 1460.430 
