@@ -1,3 +1,5 @@
+#!/usr/bin/awk -f
+
 ###############################################################################
 # Fieldwidths of the ICD9_ICD10_comparability_public_use_ASCII.dat
 #
@@ -67,7 +69,7 @@
 #   63  151 - 153     3     72 Cause Recode (Underlying Cause of Death)
 #   64  154 - 156     3     61 Infant Cause Recode (Underlying Cause of Death)
 #   65  157 - 159     3     34 Cause Recode
-#   66  160 - 161     2     Numer of Entity - Axis Conditions (ICD-9 Multiple Conditions)
+#   66  160 - 161     2     Number of Entity - Axis Conditions (ICD-9 Multiple Conditions)
 #   67  162 - 168     7     ICD-9 Entity - Axis Conditions  1st Condition
 #   68  169 - 175     7     ICD-9 Entity - Axis Conditions  2nd Condition
 #   69  176 - 182     7     ICD-9 Entity - Axis Conditions  3rd Condition
@@ -89,7 +91,7 @@
 #   85  288 - 294     7     ICD-9 Entity - Axis Conditions 19th Condition
 #   86  295 - 301     7     ICD-9 Entity - Axis Conditions 20th Condition
 #   87  302 - 337    36     Reserved Positions
-#   88  338 - 339     2     Numer of ICD-9 Record-Axis Conditions
+#   88  338 - 339     2     Number of ICD-9 Record-Axis Conditions
 #   89  340           1     Reserved Position (TRANSAX flag)
 #   90  341 - 345     5     ICD-9 Record - Axis Conditions  1st Conditions
 #   91  346 - 350     5     ICD-9 Record - Axis Conditions  2nd Condition
@@ -154,6 +156,114 @@
 #  150  674 - 678     5     ICD-10 Record - Axis Conditions 18rd Condition
 #  151  679 - 683     5     ICD-10 Record - Axis Conditions 19rd Condition
 #  152  684 - 688     5     ICD-10 Record - Axis Conditions 20rd Condition
-#  153  689           1     Mannar of Death
+#  153  689           1     Manner of Death
 
-BEGIN { FIELDWIDTHS = "" }
+
+
+BEGIN {  
+  print "Comp_flag,ICD9_00,ICD9_e01,ICD9_e02,ICD9_e03,ICD9_e04,ICD9_e05,ICD9_e06,ICD9_e07,ICD9_e08,ICD9_e09,ICD9_e10,ICD9_e11,ICD9_e12,ICD9_e13,ICD9_e14,ICD9_e15,ICD9_e16,ICD9_e17,ICD9_e18,ICD9_e19,ICD9_e20,ICD9_r01,ICD9_r02,ICD9_r03,ICD9_r04,ICD9_r05,ICD9_r06,ICD9_r07,ICD9_r08,ICD9_r09,ICD9_r10,ICD9_r11,ICD9_r12,ICD9_r13,ICD9_r14,ICD9_r15,ICD9_r16,ICD9_r17,ICD9_r18,ICD9_r19,ICD9_r20,ICD10_00,ICD10_e01,ICD10_e02,ICD10_e03,ICD10_e04,ICD10_e05,ICD10_e06,ICD10_e07,ICD10_e08,ICD10_e09,ICD10_e10,ICD10_e11,ICD10_e12,ICD10_e13,ICD10_e14,ICD10_e15,ICD10_e16,ICD10_e17,ICD10_e18,ICD10_e19,ICD10_e20,ICD10_r01,ICD10_r02,ICD10_r03,ICD10_r04,ICD10_r05,ICD10_r06,ICD10_r07,ICD10_r08,ICD10_r09,ICD10_r10,ICD10_r11,ICD10_r12,ICD10_r13,ICD10_r14,ICD10_r15,ICD10_r16,ICD10_r17,ICD10_r18,ICD10_r19,ICD10_r20"
+  FIELDWIDTHS = "689"
+}
+
+{
+  for (i = 0; i < 20; ++i) {
+    icd09entity[i+1] = substr($1, 164 + (i * 7), 4)
+    icd09record[i+1] = substr($1, 341 + (i * 5), 4)
+    icd10entity[i+1] = substr($1, 451 + (i * 7), 4)
+    icd10record[i+1] = substr($1, 589 + (i * 5), 4)
+  }
+
+  icd09_underlying_cause = substr($1, 142, 4)
+  icd10_underlying_cause = substr($1, 444, 4)
+  comparabilityflag = substr($1, 441, 1)
+
+  OFS = ","
+  print comparabilityflag,
+        icd09_underlying_cause,
+        icd09entity[1], 
+        icd09entity[2],
+        icd09entity[3],
+        icd09entity[4],
+        icd09entity[5],
+        icd09entity[6],
+        icd09entity[7],
+        icd09entity[8],
+        icd09entity[9],
+        icd09entity[10],
+        icd09entity[11],
+        icd09entity[12],
+        icd09entity[13],
+        icd09entity[14],
+        icd09entity[15],
+        icd09entity[16],
+        icd09entity[17],
+        icd09entity[18],
+        icd09entity[19],
+        icd09entity[20],
+        icd09record[1], 
+        icd09record[2],
+        icd09record[3],
+        icd09record[4],
+        icd09record[5],
+        icd09record[6],
+        icd09record[7],
+        icd09record[8],
+        icd09record[9],
+        icd09record[10],
+        icd09record[11],
+        icd09record[12],
+        icd09record[13],
+        icd09record[14],
+        icd09record[15],
+        icd09record[16],
+        icd09record[17],
+        icd09record[18],
+        icd09record[19],
+        icd09record[20], 
+        icd10_underlying_cause,
+        icd10entity[1], 
+        icd10entity[2],
+        icd10entity[3],
+        icd10entity[4],
+        icd10entity[5],
+        icd10entity[6],
+        icd10entity[7],
+        icd10entity[8],
+        icd10entity[9],
+        icd10entity[10],
+        icd10entity[11],
+        icd10entity[12],
+        icd10entity[13],
+        icd10entity[14],
+        icd10entity[15],
+        icd10entity[16],
+        icd10entity[17],
+        icd10entity[18],
+        icd10entity[19],
+        icd10entity[20], 
+        icd10record[1], 
+        icd10record[2],
+        icd10record[3],
+        icd10record[4],
+        icd10record[5],
+        icd10record[6],
+        icd10record[7],
+        icd10record[8],
+        icd10record[9],
+        icd10record[10],
+        icd10record[11],
+        icd10record[12],
+        icd10record[13],
+        icd10record[14],
+        icd10record[15],
+        icd10record[16],
+        icd10record[17],
+        icd10record[18],
+        icd10record[19],
+        icd10record[20]
+}
+
+END {
+  exit 0
+}
+
