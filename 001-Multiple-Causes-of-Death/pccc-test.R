@@ -53,8 +53,8 @@ diffs <- Vectorize(function(x, y) {
 })
 
 tic()
-  diffs(as.matrix(icd09_results[1:100, -1]), 
-        as.matrix(icd10_results[1:100, -1])) %>%
+  diffs(as.matrix(icd09_results[, -1]), 
+        as.matrix(icd10_results[, -1])) %>%
   table %>%
   print %>%
   prop.table
