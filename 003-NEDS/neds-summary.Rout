@@ -1,0 +1,66 @@
+
+R version 3.3.3 (2017-03-06) -- "Another Canoe"
+Copyright (C) 2017 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # neds-summary.R
+> 
+> library(dplyr)
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+> 
+> files <- lapply(list.files(pattern = "*.rds"), readRDS)
+> 
+> results <-
++   dplyr::bind_rows(files)
+> 
+> colSums(results)
+   Neuromuscular              CVD      Respiratory            Renal 
+           97489           456009            42051            87764 
+              GI      Hemato_immu        Metabolic Congeni_genetric 
+          139872            71213            62921            39783 
+      Malignancy         Neonatal         Tech_dep       Transplant 
+            4302              855           190620            34015 
+        ccc_flag         subjects 
+          874393          8381559 
+> 
+> SUBJECTS <- sum(results$subjects)
+> 
+> results %>%
++   summarise_all(sum) %>%
++   summarise_all(funs(./SUBJECTS)) %>%
++   print.data.frame
+  Neuromuscular        CVD Respiratory      Renal         GI Hemato_immu
+1    0.01163137 0.05440623 0.005017086 0.01047108 0.01668806 0.008496391
+    Metabolic Congeni_genetric   Malignancy     Neonatal   Tech_dep  Transplant
+1 0.007507076      0.004746492 0.0005132697 0.0001020097 0.02274279 0.004058314
+   ccc_flag subjects
+1 0.1043234        1
+> 
+> 
+> proc.time()
+   user  system elapsed 
+   0.73    0.18    0.92 
