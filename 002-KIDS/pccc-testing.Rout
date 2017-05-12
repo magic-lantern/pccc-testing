@@ -1,0 +1,169 @@
+
+R version 3.3.3 (2017-03-06) -- "Another Canoe"
+Copyright (C) 2017 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # Preferable method for running this script
+> #
+> # 1. open cmd.exe
+> # 2. navigate to directory with this file
+> # 3. "C:\Programs Files\R\R-3.3.3\bin\R.exe" CMD BATCH --vanilla pccc-testing.R
+> # 4. Review the pccc-testing.Rout file.
+> 
+> 
+> # pccc test using the KID09 data
+> date()
+[1] "Thu May 11 23:28:54 2017"
+> 
+> library(readr, lib.loc = "C:/R-site-library/")
+> library(dplyr, lib.loc = "C:/R-site-library/")
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+> library(tidyr, lib.loc = "C:/R-site-library/")
+> library(pccc,  lib.loc = "C:/R-site-library/")
+> 
+> # read in the KID09 Data
+> kid9cols <- read_csv("C:/HCUPData/KID/KID09_core_columns.csv")
+Parsed with column specification:
+cols(
+  col_type = col_character(),
+  name = col_character(),
+  start = col_integer(),
+  end = col_integer()
+)
+> # Load ASCII Core file
+> kid9core <- read_fwf("C:/HCUPData/KID/KID_2009_Core.ASC",
++                      fwf_positions(
++                        start = kid9cols$start,
++                        end = kid9cols$end,
++                        col_names = tolower(kid9cols$name)),
++                      col_types = paste(rep("c", nrow(kid9cols)), collapse = ""))
+> 
+> # select id(recnum), dx(24-28), ecode(74-77) and proc(106-120) columns only
+> kid9core <- kid9core[,c(2,24:48,74:77,106:120)]
+> 
+> dim(kid9core)
+[1] 3407146      45
+> 
+> system.time({
++   test_10 <-
++     ccc(kid9core,
++         id      = recnum,
++         dx_cols = vars(starts_with("dx"), starts_with("ecode")),
++         pc_cols = vars(starts_with("pr")),
++         icdv    = 10)
++ })
+   user  system elapsed 
+ 631.23    0.49  631.72 
+> test_10
+# A tibble: 3,407,146 × 14
+   recnum Neuromuscular   CVD Respiratory Renal    GI Hemato_immu Metabolic
+    <chr>         <int> <int>       <int> <int> <int>       <int>     <int>
+1    3921             0     0           0     0     0           0         0
+2    7181             0     0           0     0     0           0         0
+3   10089             0     0           0     0     0           0         0
+4   18008             0     0           0     0     0           0         0
+5   18113             0     0           0     0     0           0         0
+6   18387             0     0           0     0     0           0         0
+7   20783             0     0           0     0     0           0         0
+8   22380             0     0           0     0     0           0         0
+9   31665             0     0           0     0     0           0         0
+10  32270             0     0           0     0     0           0         0
+# ... with 3,407,136 more rows, and 6 more variables: Congeni_genetric <int>,
+#   Malignancy <int>, Neonatal <int>, Tech_dep <int>, Transplant <int>,
+#   ccc_flag <int>
+> dplyr::summarize_at(test_10, vars(-recnum), sum) %>% print.data.frame
+  Neuromuscular CVD Respiratory Renal GI Hemato_immu Metabolic Congeni_genetric
+1             0   0          90     0  0           0         0                0
+  Malignancy Neonatal Tech_dep Transplant ccc_flag
+1          0        0        0          0       90
+> dplyr::summarize_at(test_10, vars(-recnum), mean) %>% print.data.frame
+  Neuromuscular CVD  Respiratory Renal GI Hemato_immu Metabolic
+1             0   0 2.641507e-05     0  0           0         0
+  Congeni_genetric Malignancy Neonatal Tech_dep Transplant     ccc_flag
+1                0          0        0        0          0 2.641507e-05
+> 
+> system.time({
++   test_09 <-
++     ccc(kid9core,
++         id      = recnum,
++         dx_cols = vars(starts_with("dx"), starts_with("ecode")),
++         pc_cols = vars(starts_with("pr")),
++         icdv    = 09)
++ })
+   user  system elapsed 
+ 202.79    0.55  203.34 
+> 
+> test_09
+# A tibble: 3,407,146 × 14
+   recnum Neuromuscular   CVD Respiratory Renal    GI Hemato_immu Metabolic
+    <chr>         <int> <int>       <int> <int> <int>       <int>     <int>
+1    3921             0     0           0     0     0           0         0
+2    7181             0     0           0     0     0           0         0
+3   10089             0     0           0     0     0           0         0
+4   18008             0     0           0     0     0           0         0
+5   18113             0     0           0     0     0           0         0
+6   18387             0     0           0     0     0           0         0
+7   20783             0     1           0     0     0           0         0
+8   22380             0     0           0     1     0           0         0
+9   31665             0     0           0     0     0           0         0
+10  32270             0     0           0     0     0           0         0
+# ... with 3,407,136 more rows, and 6 more variables: Congeni_genetric <int>,
+#   Malignancy <int>, Neonatal <int>, Tech_dep <int>, Transplant <int>,
+#   ccc_flag <int>
+> dplyr::summarize_at(test_09, vars(-recnum), sum) %>% print.data.frame
+  Neuromuscular   CVD Respiratory Renal    GI Hemato_immu Metabolic
+1         65170 56577       19360 31521 71945       30553     37823
+  Congeni_genetric Malignancy Neonatal Tech_dep Transplant ccc_flag
+1            19875      38824    58110   122530      18327   356646
+> dplyr::summarize_at(test_09, vars(-recnum), mean) %>% print.data.frame
+  Neuromuscular        CVD Respiratory       Renal         GI Hemato_immu
+1    0.01912745 0.01660539 0.005682175 0.009251438 0.02111591 0.008967329
+   Metabolic Congeni_genetric Malignancy   Neonatal   Tech_dep  Transplant
+1 0.01110108      0.005833328 0.01139487 0.01705533 0.03596265 0.005378989
+   ccc_flag
+1 0.1046759
+> 
+> 
+> print(sessionInfo(), locale = FALSE)
+R version 3.3.3 (2017-03-06)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows Server 2012 R2 x64 (build 9600)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] pccc_0.2.0.9000 tidyr_0.6.2     dplyr_0.5.0     readr_1.1.0    
+
+loaded via a namespace (and not attached):
+[1] lazyeval_0.2.0   magrittr_1.5     assertthat_0.2.0 R6_2.2.1        
+[5] hms_0.3          tools_3.3.3      DBI_0.6-1        tibble_1.3.0    
+[9] Rcpp_0.12.10    
+> 
+> proc.time()
+   user  system elapsed 
+ 955.35    7.00  962.40 
