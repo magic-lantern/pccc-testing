@@ -24,14 +24,17 @@ kid9core <- read_fwf("C:/HCUPData/KID/KID_2009_Core.ASC",
                        col_names = tolower(kid9cols$name)),
                      col_types = paste(rep("c", nrow(kid9cols)), collapse = ""))
 
+table(kid9core$year)
+
 # select id(recnum), dx(24-28), ecode(74-77) and proc(106-120) columns only
-kid9core <- kid9core[,c(2,24:48,74:77,106:120)]
+# kid9core <- kid9core[,c(2,24:48,74:77,106:120)]
 
 dim(kid9core)
+n_distinct(kid9core$recnum)
 
 system.time({
   kid_ccc <-
-    ccc(kid9core,
+    ccc(kid9core[, c(2, 24:48, 74:77, 106:120)],
         id      = recnum,
         dx_cols = vars(starts_with("dx"), starts_with("ecode")),
         pc_cols = vars(starts_with("pr")),
@@ -39,7 +42,8 @@ system.time({
 })
 
 kid_ccc
-dplyr::summarize_at(test_09, vars(-recnum), sum) %>% print.data.frame
-dplyr::summarize_at(test_09, vars(-recnum), mean) %>% print.data.frame
+
+dplyr::summarize_at(kid_ccc, vars(-recnum), sum) %>% print.data.frame
+dplyr::summarize_at(kid_ccc, vars(-recnum), mean) %>% print.data.frame
 
 print(sessionInfo(), locale = FALSE)
