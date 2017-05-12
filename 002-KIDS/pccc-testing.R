@@ -30,19 +30,7 @@ kid9core <- kid9core[,c(2,24:48,74:77,106:120)]
 dim(kid9core)
 
 system.time({
-  test_10 <-
-    ccc(kid9core,
-        id      = recnum,
-        dx_cols = vars(starts_with("dx"), starts_with("ecode")),
-        pc_cols = vars(starts_with("pr")),
-        icdv    = 10)
-})
-test_10
-dplyr::summarize_at(test_10, vars(-recnum), sum) %>% print.data.frame
-dplyr::summarize_at(test_10, vars(-recnum), mean) %>% print.data.frame
-
-system.time({
-  test_09 <-
+  kid_ccc <-
     ccc(kid9core,
         id      = recnum,
         dx_cols = vars(starts_with("dx"), starts_with("ecode")),
@@ -50,9 +38,8 @@ system.time({
         icdv    = 09)
 })
 
-test_09
+kid_ccc
 dplyr::summarize_at(test_09, vars(-recnum), sum) %>% print.data.frame
 dplyr::summarize_at(test_09, vars(-recnum), mean) %>% print.data.frame
-
 
 print(sessionInfo(), locale = FALSE)
