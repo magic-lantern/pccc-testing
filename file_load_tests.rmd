@@ -84,7 +84,7 @@ tic("timinig: dstrfw method")
 # 80 seconds to run dstrfw
 dstrfw_fread <- dstrfw(fread[[1]],
                         col_types = rep_len('character', nrow(kid9cols)),
-                        widths = kid9cols$end - kid9cols$start)
+                        widths = kid9cols$end - kid9cols$start + 1) # due to positions being inclusive of endpoint, must add 1
 toc()
 
 
@@ -130,7 +130,7 @@ tic("timing: iotools")
 iotools <- input.file("C:/HCUPData/KID/KID_2009_Core.ASC",
                       formatter = dstrfw,
                       col_types = rep_len('character', nrow(kid9cols)),
-                      widths = kid9cols$end - kid9cols$start)
+                      widths = kid9cols$end - kid9cols$start + 1) # due to positions being inclusive of endpoint, must add 1
 colnames(iotools) <- tolower(kid9cols$name)
 toc()
 
