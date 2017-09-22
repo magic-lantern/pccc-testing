@@ -1,0 +1,138 @@
+---
+title: "File load tests"
+author: "Seth Russell"
+date: "September 22, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Performance optimization for file loading
+
+The KID dataset (and others for testing with PCCC) is 3.4 million rows with 159 observations and takse quite a bit of time to load. In an effort to improve performance, I've done some searching of the Internets as well as talked with others in D2V.
+
+See https://stackoverflow.com/questions/24715894/faster-way-to-read-fixed-width-files-in-r for some discussion on the best way to read large fixed width files.
+
+When running some of the sample code, I found profr and lineprof (https://github.com/hadley/lineprof) to be helpful in identifying sections of code that are slow. however, once slow portions are identified, there are a multitude of methods that can be used to resolve the issue. What follows are some tests to identify a faster method for file loading.
+
+*Note* It appears that lineprof is no longer being maintained and that https://github.com/rstudio/profvis should be used instead.
+
+Additionally tictoc is very helpful for timing operations.
+
+The test machine I used for this is a Windows 2012 server w/128GB RAM and 24 cores. I don't know what disk subsystem or IO hardware is in place.
+
+From timing tests, I've noticed that running a section of code is faster in just a standard R session as opposed to running in an R Markdown code block. Not sure why that is.
+
+### readr::read_fwf
+
+This is the original method used by Peter. This method takes about 120 seconds total on my test machine.
+
+```{r read_fwf}
+
+library(readr, lib.loc = "C:/R-site-library/")
+library(dplyr, lib.loc = "C:/R-site-library/")
+library(tidyr, lib.loc = "C:/R-site-library/")
+library(tictoc,lib.loc = "C:/R-site-library/")
+
+# read in the KID09 Data column information (not stored in the actual data file)
+kid9cols <- read_csv("C:/HCUPData/KID/KID09_core_columns.csv")
+
+tic("timing: read_fwf")
+kid9core <- read_fwf("C:/HCUPData/KID/KID_2009_Core.ASC",
+                     fwf_positions(
+                       start = kid9cols$start,
+                       end = kid9cols$end,
+                       col_names = tolower(kid9cols$name)),
+                     col_types = paste(rep("c", nrow(kid9cols)), collapse = ""))
+toc()
+```
+
+### data.table::fread
+
+This method, using fread combined with dstrfw to parse input, takes about 95 seconds total on my test machine. While fread is very fast, the conversion from a long string to individual columns of data is not super quick.
+
+```{r fread}
+
+library(data.table)
+library(stringi)
+library(iotools)
+
+tic("timing: fread load file into memory")
+# 15 seconds to read in file
+fread <- data.table::fread("C:/HCUPData/KID/KID_2009_Core.ASC",
+                          header = FALSE,
+                          sep = '\n')
+toc()
+
+tic("timing: fread substr method")
+# about 205 seconds to run apply substr
+start_end = cbind(kid9cols$start, kid9cols$end)
+text <- fread[ , apply(start_end, 1, function(y) substr(V1, y[1], y[2]))] %>% 
+  data.table(.)
+toc()
+
+tic("timing: stri_sub method")
+# 150 seconds to run lapply stri_sub
+text <- fread[, lapply(seq_len(length(kid9cols$start)),
+                       function(ii)
+                         stri_sub(V1, kid9cols$start[ii], kid9cols$end[ii]))]
+toc()
+
+tic("timinig: dstrfw method")
+# 80 seconds to run dstrfw
+dstrfw_fread <- dstrfw(fread[[1]],
+                        col_types = rep_len('character', nrow(kid9cols)),
+                        widths = kid9cols$end - kid9cols$start)
+toc()
+
+
+tic("timing: fread rename columns")
+colnames(text) <- tolower(kid9cols$name)
+toc()
+
+```
+
+**Note on attempts to parallelize the conversion to individual columns**
+
+From my results and based on the methods being used for data.table::fread, I thought it might be possible
+to improve performace through the use of parallelization. However due to my inexperience with R or due to limitations
+of the Parallel library (see https://www.r-bloggers.com/how-to-go-parallel-in-r-basics-tips/ and https://www.r-bloggers.com/a-no-bs-guide-to-the-basics-of-parallelization-in-r/), it actually takes longer and doesn't return the data in the format I want
+
+```{r parallel, eval=FALSE, echo=TRUE}
+library(parallel)
+
+# Calculate the number of cores
+#n_cores <- detectCores() - 1
+
+# Initiate cluster
+cl <- makeCluster(4)
+
+# any variable/function beyond base R that should be available must be exported
+clusterExport(cl, "stri_sub")
+clusterExport(cl, "kid9cols")
+text <- parLapply(cl, fread, function(V1) {
+  lapply(seq_len(length(kid9cols$start)),
+         function(ii)
+           stri_sub(V1, kid9cols$start[ii], kid9cols$end[ii]))})
+
+stopCluster(cl)
+```
+
+### iotools
+
+iotools::input.file is a newer option that at least on my test machine is the fastest method - it runs in about 65 seconds.
+
+```{r iotools}
+library(iotools)
+tic("timing: iotools")
+iotools <- input.file("C:/HCUPData/KID/KID_2009_Core.ASC",
+                      formatter = dstrfw,
+                      col_types = rep_len('character', nrow(kid9cols)),
+                      widths = kid9cols$end - kid9cols$start)
+colnames(iotools) <- tolower(kid9cols$name)
+toc()
+
+```
+
