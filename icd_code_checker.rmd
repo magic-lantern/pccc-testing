@@ -1,0 +1,58 @@
+---
+title: "ICD Code Checker"
+author: "Seth Russell"
+date: "9/26/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Packages
+Here are the packages used in checking ICD codes - install if not already installed.
+
+```{r packages}
+#install.packages("iotools")
+library(iotools)
+#install.packages("stringi")
+library(stringi)
+#install.packages("dplyr")
+library(dplyr)
+
+```
+
+## Note about pre-processing
+
+The Check ICD Codes section below expects a text file containing a list of ICD codes, one per line.
+
+Here's the general process I took to get the file with the codes in the desired format:
+
+1. Copy and paste the section of dx codes from the .sas file (or .R or .do).
+1. Remove all extra logic other than list of codes
+1. Remove all single and double quotes
+1. Replace commas with '\\n' (newline)
+1. Remove any extra spaces before or after an ICD code
+1. Sort list of codes in ascii order (e.g. 20 comes before 210 which also comes before 3) see https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/ for some of the reasons why this can be useful.
+
+## Check ICD Codes
+
+The following code snippet takes in the already pre-processed ICD code list and outputs duplicates and codes that might be a superset of another code.
+
+```{r process}
+
+icds <- input.file("/path/icd10_sas_pc_transplant.txt")
+
+prev <- ''
+ret <- lapply(icds, function(i) {
+  result <- stri_startswith_fixed(i, prev)
+  prev <<- i
+  result
+})
+
+m <- data.frame(icds, as.matrix(ret))
+colnames(m) <- c('icd', 'prev_match')
+filter(m, prev_match == TRUE)
+
+```
+
